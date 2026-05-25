@@ -235,18 +235,18 @@ if (! class_exists('acf_field_font_awesome')) :
 						</div>
 					<?php endif; ?>
 				<?php endif; ?>
-				<button type="button" class="button fa-icon-chooser-open"><?php esc_html_e('Choose icon', 'acf-font-awesome'); ?></button>
-				<?php if ($field['allow_null']) : ?>
-					<button type="button" class="fa-icon-clear" title="<?php esc_html_e('Clear icon', 'acf-font-awesome'); ?>">
-						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
-							<path d="M183.1 137.4C170.6 124.9 150.3 124.9 137.8 137.4C125.3 149.9 125.3 170.2 137.8 182.7L275.2 320L137.9 457.4C125.4 469.9 125.4 490.2 137.9 502.7C150.4 515.2 170.7 515.2 183.2 502.7L320.5 365.3L457.9 502.6C470.4 515.1 490.7 515.1 503.2 502.6C515.7 490.1 515.7 469.8 503.2 457.3L365.8 320L503.1 182.6C515.6 170.1 515.6 149.8 503.1 137.3C490.6 124.8 470.3 124.8 457.8 137.3L320.5 274.7L183.1 137.4z" />
-						</svg>
-					</button>
-				<?php endif; ?>
-				<input type="hidden" name="acffa_nonce" class="acffa-nonce" value="<?= esc_attr(wp_create_nonce('acffa_nonce')); ?>" />
-				<input type="hidden" name="icon_sets" class="icon-sets" value="<?= esc_attr(implode(',', $field['icon_sets'])); ?>" />
+			<?php endif; ?>
+			<button type="button" class="button fa-icon-chooser-open"><?php esc_html_e('Choose icon', 'acf-font-awesome'); ?></button>
+			<?php if ($field['allow_null']) : ?>
+				<button type="button" class="fa-icon-clear" title="<?php esc_html_e('Clear icon', 'acf-font-awesome'); ?>">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+						<path d="M183.1 137.4C170.6 124.9 150.3 124.9 137.8 137.4C125.3 149.9 125.3 170.2 137.8 182.7L275.2 320L137.9 457.4C125.4 469.9 125.4 490.2 137.9 502.7C150.4 515.2 170.7 515.2 183.2 502.7L320.5 365.3L457.9 502.6C470.4 515.1 490.7 515.1 503.2 502.6C515.7 490.1 515.7 469.8 503.2 457.3L365.8 320L503.1 182.6C515.6 170.1 515.6 149.8 503.1 137.3C490.6 124.8 470.3 124.8 457.8 137.3L320.5 274.7L183.1 137.4z" />
+					</svg>
+				</button>
+			<?php endif; ?>
+			<input type="hidden" name="acffa_nonce" class="acffa-nonce" value="<?= esc_attr(wp_create_nonce('acffa_nonce')); ?>" />
+			<input type="hidden" name="icon_sets" class="icon-sets" value="<?= esc_attr(implode(',', $field['icon_sets'] ?: [])); ?>" />
 			<?php
-			endif;
 
 			if ($v5_icon_preselected) :
 				$previous_icon_info = $this->get_previous_icon_info($select_value);
@@ -287,6 +287,7 @@ if (! class_exists('acf_field_font_awesome')) :
 				'major_version'		=> ACFFA_MAJOR_VERSION,
 				'v5_compat_mode'	=> isset($options['acffa_v5_compatibility_mode']) && $options['acffa_v5_compatibility_mode'] ? true : false,
 				'kit_token'			=> apply_filters('ACFFA_fontawesome_kit_token', false),
+				'has_api_token'		=> apply_filters('ACFFA_fontawesome_access_token', false) ? true : false,
 				'latest_version'	=> $latest_version,
 				'nonce'				=> wp_create_nonce('acffa_nonce'),
 				'ajax_url'			=> admin_url('admin-ajax.php')
