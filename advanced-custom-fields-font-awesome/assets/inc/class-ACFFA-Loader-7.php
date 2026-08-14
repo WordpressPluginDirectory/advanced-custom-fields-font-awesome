@@ -46,13 +46,19 @@ class ACFFA_Loader_7 {
 	public function fa_query_request() {
 		check_ajax_referer('acffa_nonce', 'nonce');
 
+		if (! current_user_can('edit_posts')) {
+			wp_send_json_error(['message' => __('You do not have permission to perform this action.', 'acf-font-awesome')]);
+		}
+
 		$query = isset($_POST['query']) ? sanitize_text_field(wp_unslash($_POST['query'])) : '';
 		$variables = isset($_POST['variables']) ? json_decode(wp_unslash($_POST['variables']), true) : [];
+		$variables = is_array($variables) ? $variables : [];
 
-		$body = [
-			'query'		=> $query,
-			'variables'	=> $variables
-		];
+		$request = $this->acffa_build_upstream_request($query, $variables);
+
+		if (! $request) {
+			wp_send_json_error(['message' => __('This query requests fields that are not permitted.', 'acf-font-awesome')]);
+		}
 
 		$remote_get = wp_remote_post('https://api.fontawesome.com', [
 			'headers'	=> [
@@ -60,7 +66,7 @@ class ACFFA_Loader_7 {
 				'Authorization'	=> 'Bearer ' . apply_filters('ACFFA_fontawesome_access_token', false),
 			],
 			'timeout'	=> 30,
-			'body'		=> json_encode($body)
+			'body'		=> json_encode($request)
 		]);
 
 		if (! is_wp_error($remote_get)) {
@@ -72,6 +78,69 @@ class ACFFA_Loader_7 {
 		}
 
 		wp_send_json_error();
+	}
+
+	/**
+	 * The bundled fa-icon-chooser web component (version pinned in
+	 * assets/js/fa-icon-chooser.esm.js) only ever issues these two exact
+	 * GraphQL documents. Rather than trying to validate arbitrary
+	 * client-supplied GraphQL text, recognize which of these two fixed
+	 * operations was requested and send our own canonical copy of it--never
+	 * the client's original text--with arguments bound to trusted values.
+	 * Anything that doesn't match one of these two documents exactly is
+	 * rejected.
+	 */
+	private function acffa_upstream_query_templates() {
+		return [
+			'KitMetadata' => 'query KitMetadata($token: String!) { me { kit(token: $token) { version technologySelected licenseSelected name permits { embedProSvg { prefix family } } release { version familyStyles { family style prefix } } iconUploads { name unicode version width height pathData } } } }',
+			'Search'      => 'query Search($version: String!, $query: String!) { search(version: $version, query: $query, first: 100) { id label familyStylesByLicense { free { family style } pro { family style } } } }',
+		];
+	}
+
+	private function acffa_build_upstream_request($query, $variables) {
+		if (! is_string($query) || trim($query) === '') {
+			return false;
+		}
+
+		$operation_name = array_search($query, $this->acffa_upstream_query_templates(), true);
+
+		if ($operation_name === false) {
+			return false;
+		}
+
+		if ($operation_name === 'KitMetadata') {
+			if (empty($this->kit_token)) {
+				return false;
+			}
+
+			return [
+				'query'		=> $this->acffa_upstream_query_templates()['KitMetadata'],
+				'variables'	=> ['token' => $this->kit_token],
+			];
+		}
+
+		// $operation_name === 'Search'
+		if (! isset($variables['query']) || ! is_string($variables['query'])) {
+			return false;
+		}
+
+		if (! isset($variables['version']) || ! is_string($variables['version'])) {
+			return false;
+		}
+
+		$search_term = substr(sanitize_text_field($variables['query']), 0, 100);
+
+		if (! preg_match('/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?$/', $variables['version'])) {
+			return false;
+		}
+
+		return [
+			'query'		=> $this->acffa_upstream_query_templates()['Search'],
+			'variables'	=> [
+				'version'	=> $variables['version'],
+				'query'		=> $search_term,
+			],
+		];
 	}
 
 	public function get_access_token($access_token, $new_api_key = false) {
